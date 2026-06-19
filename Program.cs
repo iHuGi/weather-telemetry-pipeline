@@ -21,13 +21,14 @@ namespace WeatherApp
     // ---------------------------------------------------------
     public class WeatherClient
     {
-        private readonly HttpClient _client;
+        // private readonly HttpClient _client;
+        private static readonly HttpClient _client = new HttpClient();
         private readonly string _apiKey;
 
         public WeatherClient(string apiKey)
         {
             // Best practice: HttpClient should ideally be static/shared in real systems
-            _client = new HttpClient();
+            // _client = new HttpClient();
             _apiKey = apiKey;
         }
 
@@ -36,7 +37,8 @@ namespace WeatherApp
             string url =
                 $"https://api.openweathermap.org/data/2.5/weather?q={city}&appid={_apiKey}&units=metric";
 
-            HttpResponseMessage response = await _client.GetAsync(url);
+            // HttpResponseMessage response = await _client.GetAsync(url);
+            HttpResponseMessage response = await _client.GetAsync(url).ConfigureAwait(false);
 
             // Fail fast: return null if API call failed
             if (!response.IsSuccessStatusCode)

@@ -1,6 +1,10 @@
 ﻿using Newtonsoft.Json.Linq;
 using DotNetEnv;
 using System.Linq;
+using System.Net.Http;
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace WeatherApp
 {
@@ -21,23 +25,18 @@ namespace WeatherApp
     // ---------------------------------------------------------
     public class WeatherClient
     {
-        // private readonly HttpClient _client;
         private static readonly HttpClient _client = new HttpClient();
         private readonly string _apiKey;
 
         public WeatherClient(string apiKey)
         {
-            // Best practice: HttpClient should ideally be static/shared in real systems
-            // _client = new HttpClient();
             _apiKey = apiKey;
         }
 
         public async Task<WeatherData?> GetWeatherAsync(string city)
         {
-            string url =
-                $"https://api.openweathermap.org/data/2.5/weather?q={city}&appid={_apiKey}&units=metric";
+            string url = $"https://api.openweathermap.org/data/2.5/weather?q={city}&appid={_apiKey}&units=metric";
 
-            // HttpResponseMessage response = await _client.GetAsync(url);
             HttpResponseMessage response = await _client.GetAsync(url).ConfigureAwait(false);
 
             // Fail fast: return null if API call failed
@@ -66,6 +65,11 @@ namespace WeatherApp
     {
         static async Task Main(string[] args)
         {
+            // -----------------------------------------------------
+            // 1. START TIMER AT THE ABSOLUTE BEGINNING
+            // -----------------------------------------------------
+            System.Diagnostics.Stopwatch timer = System.Diagnostics.Stopwatch.StartNew();
+
             Console.WriteLine("--- OOP WEATHER PIPELINE BOOTING UP ---");
 
             // Load environment variables (API key hidden in .env file)
@@ -79,7 +83,12 @@ namespace WeatherApp
             }
 
             // Input dataset
-            List<string> cities = new() { "Lisbon", "Porto", "London", "Tokyo" };
+            List<string> cities = new() {
+                "Aveiro","Beja","Braga","Braganca","Castelo Branco",
+                "Coimbra","Evora","Faro","Funchal","Guarda",
+                "Leiria","Lisbon","Ponta Delgada","Portalegre","Porto",
+                "Santarem","Setubal","Viana do Castelo","Vila Real","Viseu"
+             };
 
             // Service instantiation (dependency injection style)
             WeatherClient weatherTool = new(apiKey);
@@ -91,6 +100,7 @@ namespace WeatherApp
                 .Select(city => weatherTool.GetWeatherAsync(city))
                 .ToList();
 
+            // The massive internet wait happens here
             WeatherData?[] results = await Task.WhenAll(tasks);
 
             // -----------------------------------------------------
@@ -117,7 +127,6 @@ namespace WeatherApp
                 }
                 catch (HttpRequestException httpEx)
                 {
-                    // Rare here since HTTP already completed, but kept for robustness
                     Console.Error.WriteLine($"[!] Network exception while processing {cities[i]}: {httpEx.Message}");
                 }
                 catch (Exception ex)
@@ -125,6 +134,14 @@ namespace WeatherApp
                     Console.Error.WriteLine($"[!] Unexpected error processing {cities[i]}: {ex.Message}");
                 }
             }
+
+            // -----------------------------------------------------
+            // 2. STOP TIMER AT THE ABSOLUTE END
+            // -----------------------------------------------------
+            timer.Stop();
+
+            // 3. Output the total time taken
+            Console.WriteLine($"\nTotal C# End-to-End time: {timer.ElapsedMilliseconds} milliseconds.");
         }
     }
 }
